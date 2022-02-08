@@ -1,10 +1,13 @@
 #! /usr/bin/env python
 #  -*- coding: utf-8 -*-
 
+from multiprocessing.spawn import prepare
 import sys
 import generate_label_menu_support
 import PIL
 import cv2
+import numpy as np
+import imgaug as im
 from PIL import Image, ImageDraw, ImageTk
 from tkinter import PhotoImage
 from tkSliderWidget.tkSliderWidget import Slider
@@ -61,23 +64,11 @@ class MenuGenerateLabel:
 
         self.screen_width = 800
         self.screen_height = 700
+        self.draw_img = PIL.Image.new("RGB", (self.screen_width, self.screen_height), (0, 0, 0))
+        self.draw_line = ImageDraw.Draw(self.draw_img)
+
+        self.current_points = []
         self.menu_screen(top)
-
-    def get_x_and_y(self, event):
-        print("Entrou")
-        self.lasx, self.lasy = event.x, event.y
-        print(self.lasx, self.lasy)
-
-    def load_image_in_screen(self, img):
-        img = cv2.resize(img, (self.screen_width, self.screen_height))
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = PIL.Image.fromarray(img)
-        self.image_tk = ImageTk.PhotoImage(img)
-        self.canvas.pack()
-        self.img_canvas_id = self.canvas.create_image(
-            self.screen_width // 2, self.screen_height // 2, image=self.image_tk, anchor=tk.CENTER
-        )
-        print(img)
 
     def menu_screen(self, top):
 
@@ -243,10 +234,51 @@ class MenuGenerateLabel:
         )
 
         self.img = cv2.imread("../jupyter/image1.jpg")
-        self.load_image_in_screen(self.img)
-        print("aqui 1")
+        self.image_tk = self.load_image_in_screen(self.img)
+        self.canvas.pack()
+        self.img_canvas_id = self.canvas.create_image(
+            self.screen_width // 2, self.screen_height // 2, image=self.image_tk, anchor=tk.CENTER
+        )
+        print("Anterior: ", self.img_canvas_id)
         self.canvas.bind("<Button-1>", self.get_x_and_y)
-        print("aqui 2")
+        self.canvas.bind("<Button 3>", self.right_click)
+
+    def get_x_and_y(self, event):
+        self.lasx, self.lasy = event.x, event.y
+        self.current_points.append((self.lasx, self.lasy))
+        number_points = len(self.current_points)
+
+        if number_points > 2:
+            self.draw_line.polygon((self.current_points), fill="red", outline="red")
+
+        elif number_points == 2:
+            self.draw_line.line((self.lasx, self.lasy, event.x, event.y), (255, 0, 0), width=5, joint="curve")
+
+        Offset = (10) / 2
+        self.draw_line.ellipse(
+            (self.lasx - Offset, self.lasy - Offset, self.lasx + Offset, self.lasy + Offset), (0, 255, 0)
+        )
+        self.prepare_img(self.draw_img)
+
+    def load_image_in_screen(self, img):
+        img = cv2.resize(img, (self.screen_width, self.screen_height))
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        self.image_original = img.copy()
+        img = PIL.Image.fromarray(img)
+
+        self.image_front = ImageTk.PhotoImage(img)
+
+        return self.image_front
+
+    def prepare_img(self, img):
+        self.image = np.array(self.image_original)
+        self.image[np.array(img) == 255] = 255
+        self.image_final = ImageTk.PhotoImage(PIL.Image.fromarray(self.image))
+        self.canvas.itemconfig(self.img_canvas_id, image=self.image_final)
+
+    def right_click(self, event):
+        self.current_points.clear()
+        self.count_feature += 1
 
 
 if __name__ == "__main__":
