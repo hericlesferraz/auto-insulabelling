@@ -11,6 +11,7 @@ import imgaug as im
 from PIL import Image, ImageDraw, ImageTk
 from tkinter import PhotoImage
 from tkSliderWidget.tkSliderWidget import Slider
+from functools import partial
 
 try:
     import Tkinter as tk
@@ -70,6 +71,9 @@ class MenuGenerateLabel:
         self.current_points = []
         self.menu_screen(top)
 
+        self.slider_pencil = 10
+        self.slider_opacity = 5
+
     def menu_screen(self, top):
 
         self.color_frame_options = "#414851"
@@ -108,16 +112,19 @@ class MenuGenerateLabel:
         self.pencil_btn = tk.Button(self.frame_below_center, image=self.pencil_icon)
         self.pencil_btn.place(relx=0.006, rely=0.004, height=43, width=43)
         self.pencil_btn.configure(borderwidth="2", text="Button", background=self.color_buttons_center)
+        self.pencil_btn.bind("<Button-1>", partial(self.get_btn, key="Pencil"))
 
         self.erase_icon = ImageTk.PhotoImage(file=r"icons/eraser_black.png")
         self.erase_btn = tk.Button(self.frame_below_center, image=self.erase_icon)
         self.erase_btn.place(relx=0.006, rely=0.135, height=43, width=43)
         self.erase_btn.configure(borderwidth="2", text="Button", background=self.color_buttons_center)
+        self.erase_btn.bind("<Button-1>", partial(self.get_btn, key="Erase"))
 
         self.polygon_icon = ImageTk.PhotoImage(file=r"icons/polygon.png")
         self.polygon_btn = tk.Button(self.frame_below_center, image=self.polygon_icon)
         self.polygon_btn.place(relx=0.006, rely=0.07, height=43, width=43)
         self.polygon_btn.configure(borderwidth="2", text="Button", background=self.color_buttons_center)
+        self.polygon_btn.bind("<Button-1>", partial(self.get_btn, key="Polygon"))
 
         self.hide_layer_icon = ImageTk.PhotoImage(file=r"icons/hide_layer.png")
         self.hide_layer_btn = tk.Button(self.frame_below_center, image=self.hide_layer_icon)
@@ -125,16 +132,19 @@ class MenuGenerateLabel:
         self.hide_layer_btn.configure(
             activebackground="#f9f9f9", borderwidth="2", text="Button", background=self.color_buttons_center
         )
+        self.hide_layer_btn.bind("<Button-1>", partial(self.get_btn, key="Hidden"))
 
         self.next_icon = PhotoImage(file=r"icons/next.png")
         self.next_btn = tk.Button(root, image=self.next_icon)
         self.next_btn.place(relx=0.957, rely=0.43, height=70, width=43)
         self.next_btn.configure(borderwidth="2", background="white")
+        self.next_btn.bind("<Button-1>", partial(self.get_btn, key="Next"))
 
         self.back_icon = PhotoImage(file=r"icons/back.png")
         self.back_btn = tk.Button(root, image=self.back_icon)
         self.back_btn.place(relx=0.183, rely=0.43, height=70, width=43)
         self.back_btn.configure(borderwidth="2", background="white")
+        self.back_btn.bind("<Button-1>", partial(self.get_btn, key="Back"))
 
         self.slider_thickness = tk.Scale(self.frame_of_options, from_=0.0, to=100.0)
         self.slider_thickness.place(relx=0.098, rely=0.0705, relheight=0.062, relwidth=0.8)
@@ -148,7 +158,19 @@ class MenuGenerateLabel:
             highlightbackground=self.background_slider,
         )
 
-        self.slider_opacity = tk.Scale(self.frame_of_options, from_=0.0, to=100.0)
+        self.current_value_opacity = tk.DoubleVar()
+
+        self.label_opacity = tk.Label(self.frame_of_options, text=self.get_current_value_opacity())
+        self.label_opacity.place(relx=0.059, rely=0.138, height=31, width=79)
+        self.label_opacity.configure(text="Opacidade:", fg=self.color_buttons_center, bg=self.color_frame_options)
+
+        self.slider_opacity = tk.Scale(
+            self.frame_of_options,
+            from_=0.0,
+            to=100.0,
+            command=self.slider_changed_opacity,
+            variable=self.current_value_opacity,
+        )
         self.slider_opacity.place(relx=0.098, rely=0.178, relheight=0.062, relwidth=0.8)
         self.slider_opacity.configure(
             length="164",
@@ -202,10 +224,6 @@ class MenuGenerateLabel:
             text="Espessura:", background=self.color_frame_options, fg=self.color_buttons_center
         )
 
-        self.label_opacity = tk.Label(self.frame_of_options)
-        self.label_opacity.place(relx=0.059, rely=0.138, height=31, width=79)
-        self.label_opacity.configure(text="Opacidade:", fg=self.color_buttons_center, bg=self.color_frame_options)
-
         self.label_contourn = tk.Label(self.frame_of_options)
         self.label_contourn.place(relx=0.059, rely=0.247, height=21, width=79)
         self.label_contourn.configure(text="Contorno:", fg=self.color_buttons_center, bg=self.color_frame_options)
@@ -242,23 +260,25 @@ class MenuGenerateLabel:
         print("Anterior: ", self.img_canvas_id)
         self.canvas.bind("<Button-1>", self.get_x_and_y)
         self.canvas.bind("<Button 3>", self.right_click)
+        self.canvas.bind("<B1-Motion>", self.draw_smth)
 
     def get_x_and_y(self, event):
         self.lasx, self.lasy = event.x, event.y
-        self.current_points.append((self.lasx, self.lasy))
-        number_points = len(self.current_points)
+        if self.polygon_draw:
+            self.current_points.append((self.lasx, self.lasy))
+            number_points = len(self.current_points)
 
-        if number_points > 2:
-            self.draw_line.polygon((self.current_points), fill="red", outline="red")
+            if number_points > 2:
+                self.draw_line.polygon((self.current_points), fill="red", outline="red")
 
-        elif number_points == 2:
-            self.draw_line.line((self.lasx, self.lasy, event.x, event.y), (255, 0, 0), width=5, joint="curve")
+            elif number_points == 2:
+                self.draw_line.line((self.lasx, self.lasy, event.x, event.y), (255, 0, 0), width=5, joint="curve")
 
-        Offset = (10) / 2
-        self.draw_line.ellipse(
-            (self.lasx - Offset, self.lasy - Offset, self.lasx + Offset, self.lasy + Offset), (0, 255, 0)
-        )
-        self.prepare_img(self.draw_img)
+            Offset = (10) / 2
+            self.draw_line.ellipse(
+                (self.lasx - Offset, self.lasy - Offset, self.lasx + Offset, self.lasy + Offset), (0, 255, 0)
+            )
+            self.prepare_img(self.draw_img)
 
     def load_image_in_screen(self, img):
         img = cv2.resize(img, (self.screen_width, self.screen_height))
@@ -279,6 +299,76 @@ class MenuGenerateLabel:
     def right_click(self, event):
         self.current_points.clear()
         self.count_feature += 1
+
+    def get_btn(self, event, key):
+        self.event_btn = key
+        print(self.event_btn)
+        if key == "Pencil":
+            self.pencil_draw = True
+            self.polygon_draw = False
+            self.opacity = False
+
+        elif key == "Erase":
+            self.pencil_draw = False
+            self.polygon_draw = False
+            self.opacity = False
+
+        elif key == "Polygon":
+            self.pencil_draw = False
+            self.polygon_draw = True
+            self.opacity = False
+
+    def draw_smth(self, event):
+        if self.pencil_draw:
+            print("Draw")
+            self.lasx, self.lasy = event.x, event.y
+            self.draw_line.line((self.lasx, self.lasy, event.x, event.y), (255, 0, 0), width=20, joint="curve")
+            Offset = 20 / 2
+            self.draw_line.ellipse(
+                (self.lasx - Offset, self.lasy - Offset, self.lasx + Offset, self.lasy + Offset), (255, 0, 0)
+            )
+            self.prepare_img(self.draw_img)
+
+        if not self.pencil_draw and not self.polygon_draw:
+            self.lasx, self.lasy = event.x, event.y
+            self.draw_line.line((self.lasx, self.lasy, event.x, event.y), (0, 0, 0), width=20, joint="curve")
+            Offset = 20 / 2
+            self.draw_line.ellipse(
+                (self.lasx - Offset, self.lasy - Offset, self.lasx + Offset, self.lasy + Offset), (0, 0, 0)
+            )
+            self.prepare_img(self.draw_img)
+
+    def get_current_value_draw(self):
+        self.slider_pencil = self.current_value_draw.get()
+        if self.slider_pencil < 10:
+            self.slider_pencil = 10
+
+        return "{: .2f}".format(self.current_value_draw.get())
+
+    def get_current_value_opacity(self):
+        if self.current_value_opacity.get() == 20:
+            self.slider_opacity = "gray12"
+
+        elif self.current_value_opacity.get() == 40:
+            self.slider_opacity = "gray25"
+
+        elif self.current_value_opacity.get() == 60:
+            self.slider_opacity = "gray50"
+
+        elif self.current_value_opacity.get() == 80:
+            self.slider_opacity = "gray75"
+
+        else:
+            self.slider_opacity = None
+
+        print(self.current_value_opacity.get())
+        # return "{: .2f}".format(self.current_value_opacity.get())
+
+    def slider_changed_opacity(self, event):
+        self.label_opacity.configure(text=self.get_current_value_opacity())
+
+    def slider_changed_draw(self, event):
+        self.value_label.configure(text=self.get_current_value_draw())
 
 
 if __name__ == "__main__":
