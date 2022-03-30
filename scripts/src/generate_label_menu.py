@@ -29,7 +29,7 @@ from tkinter import PhotoImage, messagebox as mbox
 from PIL import Image, ImageDraw, ImageTk
 from tkinter import filedialog
 from osgeo import gdal, ogr, osr
-from neural import NeuralFunctions as nf
+from neural import ImagesManipulations as imp
 
 
 class Interface(tk.Frame):
@@ -43,6 +43,7 @@ class Interface(tk.Frame):
         self.hight_size = 600
         self.x_crop = 0
         self.y_crop = 0
+
         self.iterator_x = 256
         self.iterator_y = 256
 
@@ -71,17 +72,19 @@ class Interface(tk.Frame):
         self.slider_opacity = 50
         self.slider_contourn = 50
         self.color_frame_over_center = "black"
+        self.bool_dir = False
         self.pencil_draw_bool = True
         self.polygon_draw_bool = False
         self.super_pixel_bool = False
         self.opacity = False
         self.bool_draw = False
+        self.use_neural_network = False
         self.path_save_img_rgb = "dataset/rgb"
         self.path_save_img_bin = "dataset/binario"
         self.path_save_img_negative = "dataset/negativos"
         self.directory_saved = ""
         self.frame_root = root
-        self.color_line = 0
+        self.color_line = 1
         self.color_line_rgb = (255, 0, 0)
         # Valores do color_map: BLACK, RED, GREEN, BLUE
         self.color_map = [(0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
@@ -107,10 +110,7 @@ class Interface(tk.Frame):
 
         self.var = tk.IntVar()
         self.old_choose = ""
-        self.OptionList = ["Efetuar Marcacoes em Ortomosaicos", "Efetuar Marcacoes por diretorios"]
-
-        img = ImageTk.PhotoImage(file="icons/icone_sensix.png")
-        root.call("wm", "iconphoto", root._w, img)
+        self.OptionList = ["Efetuar Marcacoes por diretorios"]
 
         self.event2canvas = lambda e, c: (c.canvasx(e.x), c.canvasy(e.y))
 
@@ -118,7 +118,7 @@ class Interface(tk.Frame):
         root.geometry("1290x700+60+20")
         root.maxsize(1350, 740)
         root.resizable(0, 0)
-        root.title("WeeDraw")
+        root.title("Test Program")
 
         self.color_frame_options = "#414851"
         self.color_background = "#262930"
@@ -152,8 +152,8 @@ class Interface(tk.Frame):
         self.frame_over_center.place(relx=0.051, rely=0.0, relheight=0.999, relwidth=0.898)
         self.frame_over_center.configure(relief="groove", borderwidth="0", background=self.color_frame_over_center)
 
-        self.logo = PhotoImage(file=r"icons/logo_cnpq.png")
-        self.logo = self.logo.subsample(20, 20)
+        self.logo = PhotoImage(file=r"../icons/logo_horizontal.png")
+        self.logo = self.logo.subsample(2, 2)
         self.frame_of_options = tk.Frame(root)
         self.frame_of_options.place(relx=0.008, rely=0.014, relheight=0.964, relwidth=0.159)
         self.frame_of_options.configure(borderwidth="0", background=self.color_frame_options)
@@ -245,26 +245,26 @@ class Interface(tk.Frame):
         self.canvas.grid(row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W)
         self.frame_over_center.pack(expand=1)
 
-        self.pencil_icon = PhotoImage(file=r"icons/pencil_black_white.png")
+        self.pencil_icon = PhotoImage(file=r"../icons/pencil_black_white.png")
         self.pencil_icon = self.pencil_icon.subsample(2, 2)
         self.pencil_btn = tk.Button(self.frame_below_center, image=self.pencil_icon)
         self.pencil_btn.place(relx=0.006, rely=0.004, height=43, width=43)
         self.pencil_btn.configure(borderwidth="2", text="Button", background=self.color_buttons_center)
         self.pencil_btn.bind("<Button-1>", partial(self.get_btn, key="6"))
 
-        self.erase_icon = ImageTk.PhotoImage(file=r"icons/eraser_black.png")
+        self.erase_icon = ImageTk.PhotoImage(file=r"../icons/eraser_black.png")
         self.erase_btn = tk.Button(self.frame_below_center, image=self.erase_icon)
         self.erase_btn.place(relx=0.006, rely=0.135, height=43, width=43)
         self.erase_btn.configure(borderwidth="2", text="Button", background=self.color_buttons_center)
         self.erase_btn.bind("<Button-1>", partial(self.get_btn, key="7"))
 
-        self.polygon_icon = ImageTk.PhotoImage(file=r"icons/polygon.png")
+        self.polygon_icon = ImageTk.PhotoImage(file=r"../icons/polygon.png")
         self.polygon_btn = tk.Button(self.frame_below_center, image=self.polygon_icon)
         self.polygon_btn.place(relx=0.006, rely=0.07, height=43, width=43)
         self.polygon_btn.configure(borderwidth="2", text="Button", background=self.color_buttons_center)
         self.polygon_btn.bind("<Button-1>", partial(self.get_btn, key="9"))
 
-        self.hide_layer_icon = ImageTk.PhotoImage(file=r"icons/hide_layer.png")
+        self.hide_layer_icon = ImageTk.PhotoImage(file=r"../icons/hide_layer.png")
         self.hide_layer_btn = tk.Button(self.frame_below_center, image=self.hide_layer_icon)
         self.hide_layer_btn.place(relx=0.006, rely=0.2, height=43, width=43)
         self.hide_layer_btn.configure(
@@ -272,7 +272,7 @@ class Interface(tk.Frame):
         )
         self.hide_layer_btn.bind("<Button-1>", partial(self.get_btn, key="8"))
 
-        self.super_pixel_icon = ImageTk.PhotoImage(file=r"icons/s_pixel.png")
+        self.super_pixel_icon = ImageTk.PhotoImage(file=r"../icons/s_pixel.png")
         self.super_pixel_btn = tk.Button(self.frame_below_center, image=self.super_pixel_icon)
         self.super_pixel_btn.place(relx=0.006, rely=0.265, height=43, width=43)
         self.super_pixel_btn.configure(
@@ -280,13 +280,13 @@ class Interface(tk.Frame):
         )
         self.super_pixel_btn.bind("<Button-1>", partial(self.get_btn, key="10"))
 
-        self.next_icon = PhotoImage(file=r"icons/next.png")
+        self.next_icon = PhotoImage(file=r"../icons/next.png")
         self.next_btn = tk.Button(root, image=self.next_icon)
         self.next_btn.place(relx=0.957, rely=0.43, height=70, width=43)
         self.next_btn.configure(borderwidth="2", background="white")
         self.next_btn.bind("<Button-1>", partial(self.get_btn, key="Next"))
 
-        self.back_icon = PhotoImage(file=r"icons/back.png")
+        self.back_icon = PhotoImage(file=r"../icons/back.png")
         self.back_btn = tk.Button(root, image=self.back_icon)
         self.back_btn.place(relx=0.183, rely=0.43, height=70, width=43)
         self.back_btn.configure(borderwidth="2", background="white")
@@ -300,6 +300,10 @@ class Interface(tk.Frame):
 
         self.current_value_opacity.set(50.0)
         self.current_value_contourn.set(1)
+
+        self.next_btn.bind("<Button-1>", partial(self.button_click, key="1"))
+        self.back_btn.bind("<Button-1>", partial(self.button_click, key="0"))
+        print("Aqui")
 
     def load_image_in_screen(self, img):
         img = cv2.resize(img, (self.screen_width, self.screen_height))
@@ -361,8 +365,8 @@ class Interface(tk.Frame):
 
     def first_menu(self, app):
 
-        self.logo = PhotoImage(file=r"icons/logo_cnpq.png")
-        self.logo = self.logo.subsample(5, 5)
+        self.logo = PhotoImage(file=r"../icons/logo_horizontal.png")
+        self.logo = self.logo.subsample(1, 1)
         self.canvas1 = tk.Canvas(root)
         self.canvas1.place(relx=0.117, rely=0.111, relheight=0.291, relwidth=0.752)
         self.canvas1.configure(borderwidth="2")
@@ -516,7 +520,6 @@ class Interface(tk.Frame):
 
     def keyboard(self, event):
         self.key_pressed = event.char
-
         if self.key_pressed == "r":
             self.color_line = 1
             print("r")
@@ -529,11 +532,45 @@ class Interface(tk.Frame):
             self.color_line = 3
             print("b")
 
-        # else:
-        #    self.color_line = 0
-        #    print("Black")
+        if self.key_pressed == "p":
+            self.color_line = 0
+            print("p")
+
+        if self.key_pressed == "n":
+            if not self.use_neural_network:
+                from neural import NeuralFunctions
+
+                self.use_neural_network = True
+                self.path_neural_network = filedialog.askopenfilename(title="Selecione os pesos da rede neural :")
+                self.neural_network = NeuralFunctions(self.path_neural_network)
+                img = self.neural_network.predict_image(self.imgparcela)
+            else:
+                img = self.neural_network.predict_image(self.imgparcela)
+
+            img = cv2.resize(img, (self.screen_width, self.screen_height))
+            img = imp.gray_to_rgba(self, img)
+
+            image_new = []
+            for channel in range(img.shape[-1] - 1):
+                img[img[:, :, channel] == 255] = [0, 0, 255, self.slider_opacity]
+
+            img = Image.fromarray(img)
+            for item in img.getdata():
+
+                if item[:3] == (0, 0, 0):
+                    image_new.append((0, 0, 0, 0))
+                else:
+                    image_new.append(item[:3] + (self.slider_opacity,))
+
+            img.putdata(image_new)
+            self.draw_img.paste(img, (0, 0), img)
+
+        if self.super_pixel_bool:
+            self.draw_img = PIL.Image.new("RGBA", (self.screen_width, self.screen_height), (0, 0, 0, 0))
+            self.draw_line = ImageDraw.Draw(self.draw_img)
 
         self.color_line_rgb = self.color_map[self.color_line]
+        print(self.color_line)
 
     def get_btn(self, event, key):
         self.event_btn = key
@@ -631,8 +668,8 @@ class Interface(tk.Frame):
                 self.dst_img.SetProjection(self.mosaico.GetProjectionRef())
                 self.dst_img.SetGeoTransform(self.mosaico.GetGeoTransform())
 
-            self.daninha_1 = gdal.Open(self.reference_binary)
-            self.daninha_band_1 = self.daninha_1.GetRasterBand(1)
+            self.image_1 = gdal.Open(self.reference_binary)
+            self.image_band_1 = self.image_1.GetRasterBand(1)
 
             self.draw_img = PIL.Image.new("RGBA", (self.screen_width, self.screen_height), (0, 0, 0, 0))
             self.draw_line = ImageDraw.Draw(self.draw_img)
@@ -679,13 +716,13 @@ class Interface(tk.Frame):
             self.canvas.grid(row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W)
             self.frame.pack(expand=1)
 
-            self.next_icon = PhotoImage(file=r"icons/next.png")
+            self.next_icon = PhotoImage(file=r"../icons/next.png")
             self.next_btn = tk.Button(root, image=self.next_icon)
             self.next_btn.place(relx=0.926, rely=0.363, height=83, width=43)
             self.next_btn.configure(borderwidth="2")
             self.next_btn.bind("<Button-1>", partial(self.change_dir, key="1"))
 
-            self.back_icon = PhotoImage(file=r"icons/back.png")
+            self.back_icon = PhotoImage(file=r"../icons/back.png")
             self.back_btn = tk.Button(root, image=self.back_icon)
             self.back_btn.place(relx=0.031, rely=0.363, height=83, width=43)
             self.back_btn.configure(borderwidth="2")
@@ -696,6 +733,29 @@ class Interface(tk.Frame):
         self.labelling_start()
 
     def callback_opt(self, *args):
+        if self.variable.get() == "Efetuar Marcacoes por diretorios":
+            self.bool_dir = True
+            self.count_img = 0
+            self.current_directory = filedialog.askdirectory()
+            self.path_images_array = []
+            self.name_images = []
+            for name_images in os.listdir(self.current_directory):
+                self.path_images_array.append(self.current_directory + "/" + name_images)
+                self.name_images.append(name_images)
+
+            print(self.path_images_array)
+
+            if not os.path.isdir(self.path_save_img_rgb):
+                os.makedirs(self.path_save_img_rgb, exist_ok=True)
+
+            if not os.path.isdir(self.path_save_img_bin):
+                os.makedirs(self.path_save_img_bin, exist_ok=True)
+
+            if not os.path.isdir(self.path_save_img_negative):
+                os.makedirs(self.path_save_img_negative, exist_ok=True)
+
+            self.labelling_start()
+
         if self.variable.get() == "Efetuar Marcacoes em Ortomosaicos":
             if not os.path.isdir(self.path_save_img_rgb):
                 os.makedirs(self.path_save_img_rgb, exist_ok=True)
@@ -718,41 +778,43 @@ class Interface(tk.Frame):
     def button_click(self, event=None, key=None):
         print("self.img_canvas_id : ", self.img_canvas_id)
         if self.bool_draw:
-            if self.super_pixel_bool:
-                self.markers = cv2.watershed(self.image_down, self.image_array_gray)
-                for i in range(self.color_map.__len__()):
-                    self.segmentation[self.markers == i + 1] = self.color_map[i]
-
-                self.image_down = self.segmentation.copy()
-
-                self.bool_draw = True
-                self.update_img(self.draw_img_gray)
-                im.imshow(self.segmentation)
-
             self.current_value_saturation.set(0.0)
 
             self.count_feature = 0
             data_polygons = []
 
             self.save_draw_array = np.asarray(self.draw_img)
-            self.save_draw_array = nf.prepare_array(self, self.save_draw_array, self.iterator_x, self.iterator_y)
+            self.save_draw_array = imp.prepare_array(self, self.save_draw_array, self.iterator_x, self.iterator_y)
 
             if cv2.countNonZero(self.save_draw_array) == 0:
                 cv2.imwrite(
-                    self.path_save_img_negative + "/daninha_{x}_{y}.png".format(x=int(self.x_crop), y=int(self.y_crop)),
+                    self.path_save_img_negative + "/image_{x}_{y}.png".format(x=int(self.x_crop), y=int(self.y_crop)),
                     self.imgparcela,
                 )
             else:
-                cv2.imwrite(
-                    self.path_save_img_rgb + "/daninha_{x}_{y}.png".format(x=int(self.x_crop), y=int(self.y_crop)),
-                    self.imgparcela,
-                )
-                cv2.imwrite(
-                    self.path_save_img_bin + "/daninha_{x}_{y}.png".format(x=int(self.x_crop), y=int(self.y_crop)),
-                    self.save_draw_array,
-                )
-                self.dst_img.GetRasterBand(1).WriteArray(self.save_draw_array, xoff=self.x_crop, yoff=self.y_crop)
-                self.dst_img.FlushCache()
+                if not self.bool_dir:
+                    self.dst_img.GetRasterBand(1).WriteArray(self.save_draw_array, xoff=self.x_crop, yoff=self.y_crop)
+                    self.dst_img.FlushCache()
+
+                    cv2.imwrite(
+                        self.path_save_img_rgb + "/image_{x}_{y}.png".format(x=int(self.x_crop), y=int(self.y_crop)),
+                        self.imgparcela,
+                    )
+                    cv2.imwrite(
+                        self.path_save_img_bin + "/image_{x}_{y}.png".format(x=int(self.x_crop), y=int(self.y_crop)),
+                        self.save_draw_array,
+                    )
+
+                else:
+                    print("No else:", self.name_images[self.count_img])
+                    cv2.imwrite(
+                        (self.path_save_img_rgb + "/" + self.name_images[self.count_img]),
+                        self.imgparcela,
+                    )
+                    cv2.imwrite(
+                        (self.path_save_img_bin + "/" + self.name_images[self.count_img]),
+                        self.save_draw_array,
+                    )
 
                 self.draw_img = PIL.Image.new("RGBA", (self.screen_width, self.screen_height), (0, 0, 0, 0))
                 self.draw_line = ImageDraw.Draw(self.draw_img)
@@ -763,130 +825,106 @@ class Interface(tk.Frame):
             self.draw_lines_array = []
             self.features_polygons = [[]]
 
-        if key == "1":
-            if self.x_crop + self.iterator_x < self.mosaico.RasterXSize and self.x_crop + self.iterator_x > 0:
-                self.x_crop += self.iterator_x * self.iterator_recoil
-                # print('key 1 - if 0')
+        if self.bool_dir:
+            if key == "1":
+                print(key)
+                self.draw_img = PIL.Image.new("RGBA", (self.screen_width, self.screen_height), (0, 0, 0, 0))
+                self.draw_line = ImageDraw.Draw(self.draw_img)
 
-                if self.x_crop + self.iterator_x > self.mosaico.RasterXSize:
-                    self.x_max = self.x_crop - self.iterator_x * self.iterator_recoil
-                    # print('entrou')
+                self.draw_img_gray = PIL.Image.new("L", (self.screen_width, self.screen_height))
+                self.draw_line_gray = ImageDraw.Draw(self.draw_img_gray)
 
-            if self.x_crop + self.iterator_x > self.mosaico.RasterXSize:
-                self.x_crop = 0
-                self.y_crop += self.iterator_y * self.iterator_recoil
-                # print('key 1 - if 1')
+                self.imgparcela = cv2.imread(self.path_images_array[self.count_img])
+                self.imgparcela = cv2.cvtColor(self.imgparcela, cv2.COLOR_BGR2RGB)
+                self.image_down = self.imgparcela.copy()
 
-            if self.y_crop + self.iterator_y > self.mosaico.RasterYSize:
-                self.x_crop = self.x_crop
-                self.y_crop = self.y_crop
-                # print('key 1 - if 2')
-                mbox.showinfo("Information", "Todo o Mosaico foi Percorrido!")
-                self.destroy_aplication()
+                self.segmentation = np.zeros_like(self.image_down)
+                self.marker_base = np.zeros(self.image_down.shape[0:2], dtype="int32")
+                self.count_img += 1
 
-            self.daninha_parcela = self.daninha_band_1.ReadAsArray(
-                self.x_crop, self.y_crop, self.iterator_x, self.iterator_y
-            )
-            while cv2.countNonZero(self.daninha_parcela) <= self.iterator_x * self.iterator_y * self.background_percent:
-                if self.x_crop + self.iterator_x < self.mosaico.RasterXSize and self.x_crop + self.iterator_x > 0:
-                    self.x_crop += self.iterator_x * self.iterator_recoil
-                    # print('key 1 - if 0')
+                self.img_array_tk = cv2.resize(self.imgparcela, (self.screen_width, self.screen_height))
+                self.img_array_tk = PIL.Image.fromarray(self.img_array_tk)
+                self.image_tk = ImageTk.PhotoImage(self.img_array_tk)
+                self.first_click = True
+                self.canvas.grid(row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W)
+                self.update_img(self.img_array_tk)
+                self.canvas.config(scrollregion=self.canvas.bbox(tk.ALL))
 
-                    if self.x_crop + self.iterator_x > self.mosaico.RasterXSize:
-                        self.x_max = self.x_crop - self.iterator_x * self.iterator_recoil
-                        # print('entrou')
+                self.canvas.bind("<Button-1>", self.get_x_and_y)
+                self.canvas.bind("<Button 3>", self.right_click)
+                self.canvas.bind("<B1-Motion>", self.draw_smth)
+                self.frame_root.bind("<KeyPress>", self.keyboard)
+                self.canvas.bind("<ButtonRelease-1>", self.mouse_release)
 
-                if self.x_crop + self.iterator_x > self.mosaico.RasterXSize:
-                    self.x_crop = 0
-                    self.y_crop += self.iterator_y * self.iterator_recoil
-                    # print('key 1 - if 1')
+                self.canvas.pack()
 
-                if self.y_crop + self.iterator_y > self.mosaico.RasterYSize:
-                    self.x_crop = self.x_crop
-                    self.y_crop = self.y_crop
-                    # print('key 1 - if 2')
-                    mbox.showinfo("Information", "Todo o Mosaico foi Percorrido!")
-                    self.destroy_aplication()
-                    break
+            if key == "0":
+                print(key)
+                self.count_img -= 1
 
-                self.daninha_parcela = self.daninha_band_1.ReadAsArray(
-                    self.x_crop, self.y_crop, self.iterator_x, self.iterator_y
-                )
+                self.draw_img = PIL.Image.new("RGBA", (self.screen_width, self.screen_height), (0, 0, 0, 0))
+                self.draw_line = ImageDraw.Draw(self.draw_img)
 
-        elif key == "0":
-            if self.x_crop - self.iterator_x < self.mosaico.RasterXSize:
-                self.x_crop -= self.iterator_x * self.iterator_recoil
-                # print('key 0 - if 1')
+                self.draw_img_gray = PIL.Image.new("L", (self.screen_width, self.screen_height))
+                self.draw_line_gray = ImageDraw.Draw(self.draw_img_gray)
 
-                if self.x_crop <= 0:
-                    self.x_crop = self.x_max
-                    self.y_crop -= self.iterator_y * self.iterator_recoil
-                    # print('key 0 - if 2')
+                self.imgparcela = cv2.imread(self.path_images_array[self.count_img])
+                self.imgparcela = cv2.cvtColor(self.imgparcela, cv2.COLOR_BGR2RGB)
+                self.image_down = self.imgparcela.copy()
 
-            if self.y_crop - self.iterator_y > self.mosaico.RasterYSize:
-                self.x_crop = 0
-                self.y_crop -= self.iterator_y * self.iterator_recoil
-                # print('aqui2')
+                self.segmentation = np.zeros_like(self.image_down)
+                self.marker_base = np.zeros(self.image_down.shape[0:2], dtype="int32")
 
-            self.daninha_parcela = self.daninha_band_1.ReadAsArray(
-                self.x_crop, self.y_crop, self.iterator_x, self.iterator_y
-            )
-            while cv2.countNonZero(self.daninha_parcela) <= self.iterator_x * self.iterator_y * self.background_percent:
-                if self.x_crop - self.iterator_x < self.mosaico.RasterXSize:
-                    self.x_crop -= self.iterator_x * self.iterator_recoil
+                self.img_array_tk = cv2.resize(self.imgparcela, (self.screen_width, self.screen_height))
+                self.img_array_tk = PIL.Image.fromarray(self.img_array_tk)
+                self.image_tk = ImageTk.PhotoImage(self.img_array_tk)
+                self.first_click = True
+                self.canvas.grid(row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W)
+                self.update_img(self.img_array_tk)
+                self.canvas.config(scrollregion=self.canvas.bbox(tk.ALL))
 
-                    if self.x_crop <= 0:
-                        self.x_crop = self.x_max
-                        self.y_crop -= self.iterator_y * self.iterator_recoil
+                self.canvas.bind("<Button-1>", self.get_x_and_y)
+                self.canvas.bind("<Button 3>", self.right_click)
+                self.canvas.bind("<B1-Motion>", self.draw_smth)
+                self.frame_root.bind("<KeyPress>", self.keyboard)
+                self.canvas.bind("<ButtonRelease-1>", self.mouse_release)
 
-                if self.y_crop - self.iterator_y > self.mosaico.RasterYSize:
-                    self.x_crop = 0
-                    self.y_crop -= self.iterator_y * self.iterator_recoil
-
-                self.daninha_parcela = self.daninha_band_1.ReadAsArray(
-                    self.x_crop, self.y_crop, self.iterator_x, self.iterator_y
-                )
-
-        self.daninha_parcela = self.daninha_band_1.ReadAsArray(
-            self.x_crop, self.y_crop, self.iterator_x, self.iterator_y
-        )
-        # self.percent_txt["text"] = (
-        #    "Progress : "
-        #    + str(self.percent_progress(self.x_crop, self.y_crop, self.mosaico.RasterXSize, self.mosaico.RasterYSize))
-        #    + "%"
-        # )
-        blueparcela = self.blue.ReadAsArray(self.x_crop, self.y_crop, self.iterator_x, self.iterator_y)
-        greenparcela = self.green.ReadAsArray(self.x_crop, self.y_crop, self.iterator_x, self.iterator_y)
-        redparcela = self.red.ReadAsArray(self.x_crop, self.y_crop, self.iterator_x, self.iterator_y)
-        self.imgparcela = cv2.merge((blueparcela, greenparcela, redparcela))
-        self.imgparcela[self.daninha_parcela == 0] = 0
-        self.image_down = self.imgparcela.copy()
-
-        self.segmentation = np.zeros_like(self.image_down)
-        self.marker_base = np.zeros(self.image_down.shape[0:2], dtype="int32")
-
-        self.img_array_tk = cv2.resize(self.imgparcela, (self.screen_width, self.screen_height))
-        self.img_array_tk = PIL.Image.fromarray(self.img_array_tk)
-        self.image_tk = ImageTk.PhotoImage(self.img_array_tk)
-        self.first_click = True
-        self.canvas.grid(row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W)
-        self.update_img(self.img_array_tk)
-        self.canvas.config(scrollregion=self.canvas.bbox(tk.ALL))
-
-        self.canvas.bind("<Button-1>", self.get_x_and_y)
-        self.canvas.bind("<Button 3>", self.right_click)
-        self.canvas.bind("<B1-Motion>", self.draw_smth)
-        self.frame_root.bind("<KeyPress>", self.keyboard)
-        self.canvas.bind("<ButtonRelease-1>", self.mouse_release)
-
-        self.canvas.pack()
+                self.canvas.pack()
 
     def right_click(self, event):
         self.current_points.clear()
         self.count_feature += 1
 
     def mouse_release(self, event):
-        print("MouseRelease")
+        if self.super_pixel_bool:
+            self.image_for_watershed = self.imgparcela.copy()
+
+            self.image_for_watershed = cv2.resize(self.image_for_watershed, (self.screen_width, self.screen_height))
+            self.segmentation = np.zeros_like(self.image_for_watershed)
+
+            markers = cv2.watershed(self.image_for_watershed.copy(), self.image_array_gray.copy())
+
+            for i in range(self.color_map.__len__()):
+                self.segmentation[markers == i + 1] = self.color_map[i]
+
+            self.bool_draw = True
+            # self.segmentation = cv2.resize(self.segmentation, (self.iterator_x, self.iterator_y))
+            # self.image_down[self.segmentation != 0] = 255
+
+            self.segmentation = cv2.cvtColor(self.segmentation, cv2.COLOR_RGB2RGBA)
+            self.segmentation = Image.fromarray(self.segmentation)
+            ##
+            image_new = []
+            for item in self.segmentation.getdata():
+                if item[:3] == (0, 0, 0):
+                    image_new.append((0, 0, 0, 0))
+                else:
+                    image_new.append(item[:3] + (self.slider_opacity,))
+
+            self.segmentation.putdata(image_new)
+
+            self.draw_img.paste(self.segmentation, (0, 0), self.segmentation)
+            self.update_img(self.draw_img)
 
     def get_x_and_y(self, event):
         self.lasx, self.lasy = event.x, event.y
@@ -916,12 +954,14 @@ class Interface(tk.Frame):
             )
             self.update_img(self.draw_img)
 
-    def draw_smth(self, event):
-        if self.pencil_draw_bool:
-            self.lasx, self.lasy = event.x, event.y
+        self.old_x = self.lasx
+        self.old_y = self.lasy
 
+    def draw_smth(self, event):
+        self.lasx, self.lasy = event.x, event.y
+        if self.pencil_draw_bool:
             self.draw_line.line(
-                (self.lasx, self.lasy, event.x, event.y),
+                (self.old_x, self.old_y, self.lasx, self.lasy),
                 (self.color_line_rgb + (int(self.current_value_opacity.get()),)),
                 width=int(self.slider_pencil),
                 joint="curve",
@@ -936,12 +976,10 @@ class Interface(tk.Frame):
 
         if self.super_pixel_bool:
             self.lasx, self.lasy = event.x, event.y
-
             self.draw_line.line(
-                (self.lasx, self.lasy, event.x, event.y),
+                ((self.old_x, self.old_y, self.lasx, self.lasy)),
                 (self.color_line_rgb + (int(self.current_value_opacity.get()),)),
                 width=int(self.slider_pencil),
-                joint="curve",
             )
             Offset = (int(self.slider_pencil)) / 2
             self.draw_line.ellipse(
@@ -951,40 +989,22 @@ class Interface(tk.Frame):
             self.update_img(self.draw_img)
 
             self.draw_line_gray.line(
-                (self.lasx, self.lasy, event.x, event.y),
-                self.color_line,
-                width=int(self.slider_pencil),
-                joint="curve",
-            )
-            Offset = (int(self.slider_pencil)) / 2
-            self.draw_line_gray.ellipse(
-                (self.lasx - Offset, self.lasy - Offset, self.lasx + Offset, self.lasy + Offset),
-                self.color_line,
+                ((self.old_x, self.old_y, self.lasx, self.lasy)), self.color_line, width=int(self.slider_pencil)
             )
 
-            self.image_array_gray = np.array(self.draw_img_gray, dtype="float32")
-            self.image_array_gray = cv2.resize(self.image_array_gray, (256, 256))
+            self.image_array_gray = np.array(self.draw_img_gray.copy(), dtype="float32")
+            ##self.image_array_gray = cv2.resize(self.image_array_gray, (self.iterator_x, self.iterator_y))
             self.image_array_gray = np.array(self.image_array_gray, dtype="int32")
 
-            """
-                self.markers = cv2.watershed(self.image_down, self.image_array_gray)
-                for i in range(self.color_map.__len__()):
-                    self.segmentation[self.markers == i + 1] = self.color_map[i]
-
-                self.image_down = self.segmentation.copy()
-
-                self.bool_draw = True
-                self.update_img(self.draw_img_gray)
-            """
             self.bool_draw = True
 
         elif not self.pencil_draw_bool and not self.polygon_draw_bool:
             self.lasx, self.lasy = event.x, event.y
 
             self.draw_line.line(
-                (self.lasx, self.lasy, event.x, event.y),
+                (self.old_x, self.old_y, self.lasx, self.lasy),
                 (0, 0, 0, 0),
-                width=20,
+                width=int(self.slider_pencil / 2),
                 joint="curve",
             )
             Offset = int(self.slider_pencil / 2)
@@ -994,6 +1014,9 @@ class Interface(tk.Frame):
             )
             self.bool_draw = True
             self.update_img(self.draw_img)
+
+        self.old_x = self.lasx
+        self.old_y = self.lasy
 
     def update_img(self, img):
 
@@ -1125,7 +1148,7 @@ class Interface(tk.Frame):
                 self.imgparcela = cv2.merge((blueparcela, greenparcela, redparcela))
                 img = self.imgparcela / 255
 
-                pr = nf.predict_image(self, img)
+                pr = imp.predict_image(self, img)
 
                 if (self.imgparcela.max() > 0) and (self.imgparcela.min() < 255):
                     write_image = pr
@@ -1197,7 +1220,7 @@ if __name__ == "__main__":
 
     root = tk.Tk()
     obj = Interface(root)
-    root.title("WeeDraw")
+    root.title("Test Program")
     root.resizable(False, False)
     obj.first_menu(root)
     root.geometry("800x800+50+10")
