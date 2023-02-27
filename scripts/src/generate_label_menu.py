@@ -5,7 +5,6 @@ import pathlib
 import PIL
 import cv2
 import sys
-import imgaug as im
 
 try:
 
@@ -28,7 +27,6 @@ from functools import partial
 from tkinter import PhotoImage, messagebox as mbox
 from PIL import Image, ImageDraw, ImageTk
 from tkinter import filedialog
-from osgeo import gdal, ogr, osr
 from neural import ImagesManipulations as imp
 
 
@@ -118,7 +116,7 @@ class Interface(tk.Frame):
         root.geometry("1290x700+60+20")
         root.maxsize(1350, 740)
         root.resizable(0, 0)
-        root.title("Test Program")
+        root.title("InsuLabel")
 
         self.color_frame_options = "#414851"
         self.color_background = "#262930"
@@ -1220,7 +1218,7 @@ if __name__ == "__main__":
 
     root = tk.Tk()
     obj = Interface(root)
-    root.title("Test Program")
+    root.title("InsuLabel")
     root.resizable(False, False)
     obj.first_menu(root)
     root.geometry("800x800+50+10")

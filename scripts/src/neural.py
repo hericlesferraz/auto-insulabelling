@@ -5,12 +5,9 @@ import cv2
 from keras_segmentation.predict import predict
 from keras.preprocessing import image
 from numpy.core.records import array
-from tensorflow.python.keras.backend import print_tensor
-from tensorflow.python.keras.preprocessing.image import img_to_array
+from keras.backend import print_tensor
+from keras_preprocessing.image import img_to_array
 
-from matplotlib import pyplot as plt
-from matplotlib import cm
-from sklearn.metrics import jaccard_score
 
 os.environ["SM_FRAMEWORK"] = "tf.keras"
 import segmentation_models as sm
